@@ -2,16 +2,20 @@ using UnityEngine;
 
 public class EnemyWarp : MonoBehaviour
 {
-    [SerializeField] private float predictionTime = 0.5f;     // 何秒先を予測するか
-    [SerializeField] private float warpCooldown = 3.0f;       // ワープのクールタイム（秒）
-    [SerializeField] private float offsetBack = 0.5f;         // プレイヤー予測位置の少し後ろにワープする
+    [SerializeField] private float predictionTime = 0.5f;     // 予測時間
+    [SerializeField] private float warpCooldown = 3.0f;       // クールタイム
+    [SerializeField] private float offsetBack = 0.5f;         // 少し手前にワープ
 
-    [Header("ワープ後のエフェクト")]
-    [SerializeField] private GameObject warpEffectAfter;      // ワープ後エフェクト
+    [Header("ワープ用エフェクト")]
+    [SerializeField] private GameObject warpEffectAfter;      // ワープ後の爆発エフェクト
+    [SerializeField] private GameObject warpWarningEffect;    // ワープ前の予告エフェクト
 
     private float lastWarpTime = -Mathf.Infinity;
     private Transform player;
     private Rigidbody2D playerRb;
+
+    private GameObject warningInstance;   // 現在表示中の予告エフェクト
+    private Vector2 nextWarpTarget;       // 次のワープ先を記録
 
     void Start()
     {
@@ -31,32 +35,49 @@ public class EnemyWarp : MonoBehaviour
     {
         if (player == null || playerRb == null) return;
 
+        // クールタイムが過ぎていれば予測して目印を出す
         if (Time.time - lastWarpTime >= warpCooldown)
         {
-            WarpToPredictedPosition();
+            PredictWarpPosition();  // 予告を出す
+            Invoke(nameof(ExecuteWarp), 0.5f);  // 少し遅れてワープ（0.5秒後）
             lastWarpTime = Time.time;
         }
     }
 
-    void WarpToPredictedPosition()
+    // ワープ位置を予測し、そこに目印を出す
+    void PredictWarpPosition()
     {
-        // 予測位置を計算（位置 + 速度 * 時間）
         Vector2 predictedPosition = (Vector2)player.position + playerRb.velocity * predictionTime;
-
-        // プレイヤーの進行方向に少し手前にワープ
         Vector2 backOffset = playerRb.velocity.normalized * offsetBack;
-        Vector2 warpTarget = predictedPosition - backOffset;
+        nextWarpTarget = predictedPosition - backOffset;
 
-        // ワープ実行
-        transform.position = warpTarget;
+        // 予告エフェクトを配置
+        if (warpWarningEffect != null)
+        {
+            if (warningInstance != null) Destroy(warningInstance); // 前回のを消す
+            warningInstance = Instantiate(warpWarningEffect, nextWarpTarget, Quaternion.identity);
+        }
+    }
 
-        // --- ワープ後のエフェクトのみ ---
+    // 実際にワープする
+    void ExecuteWarp()
+    {
+        transform.position = nextWarpTarget;
+
+        // ワープ後エフェクト
         if (warpEffectAfter != null)
         {
             GameObject effect = Instantiate(warpEffectAfter, transform.position, Quaternion.identity);
             Destroy(effect, 0.5f);
         }
 
-        Debug.Log("敵がプレイヤーの予測位置にワープしました: " + warpTarget);
+        // 予告エフェクトを消す
+        if (warningInstance != null)
+        {
+            Destroy(warningInstance);
+            warningInstance = null;
+        }
+
+        Debug.Log("敵が予告地点にワープしました: " + nextWarpTarget);
     }
 }

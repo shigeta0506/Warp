@@ -911,6 +911,7 @@ MonoBehaviour:
   warpCooldown: 3
   offsetBack: 0.5
   warpEffectAfter: {fileID: 4177015041117929726, guid: d5c0995f7381fe149b4cbbc178b7f72e, type: 3}
+  warpWarningEffect: {fileID: 4177015041117929726, guid: d5c0995f7381fe149b4cbbc178b7f72e, type: 3}
 --- !u!1 &112039054
 GameObject:
   m_ObjectHideFlags: 0
